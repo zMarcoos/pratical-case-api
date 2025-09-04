@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AutoU — Classificador de E-mails</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      --font-sans: "JetBrains Mono", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      --color-background-app: theme(colors.slate.900);
+      --color-card: theme(colors.slate.800 / 0.9);
+      --color-ring: theme(colors.slate.700 / 0.6);
+      --color-muted: theme(colors.slate.400);
+      --color-ok: theme(colors.emerald.400);
+      --color-ok-text: theme(colors.emerald.950);
+      --color-warning: theme(colors.amber.400);
+      --color-warning-text: theme(colors.amber.950);
+      --shadow: 0 10px 30px rgb(0 0 0 / .35);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-(--color-background-app) text-slate-200 font-sans antialiased">
+  <main class="mx-auto max-w-3xl p-6 md:p-10">
+    <header class="mb-6 md:mb-10 text-center">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight">
+        Classificador de e-mails
+      </h1>
+      <p class="mt-2 text-(--color-muted)">
+        Envie um <b>.txt</b> ou <b>.pdf</b>, ou cole o conteúdo. O sistema classifica e sugere uma resposta.
+      </p>
+    </header>
+
+    <div class="rounded-2xl bg-(--color-card) ring-1 ring-(--color-ring) shadow-[var(--shadow)]">
+      <form id="formulary" class="p-5 md:p-6" aria-labelledby="formulary-title">
+        <h2 id="formulary-title" class="sr-only">Enviar e-mail para classificação</h2>
+
+        <fieldset class="space-y-4">
+          <div>
+            <label for="file" class="block text-sm font-semibold mb-2">Escolher arquivo (.txt ou .pdf)</label>
+            <input id="file" name="file" type="file" accept=".txt,.pdf" class="block w-full text-sm file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0
+                     file:bg-(--color-ok) file:text-(--color-ok-text) file:font-bold
+                     hover:file:opacity-90 transition" />
+          </div>
+
+          <div class="text-center text-(--color-muted) text-sm">ou</div>
+
+          <div>
+            <label for="text" class="block text-sm font-semibold mb-2">Colar conteúdo do e-mail</label>
+            <textarea id="text" name="text" rows="8" placeholder="Cole aqui o conteúdo do e-mail..." class="w-full rounded-xl bg-slate-900/70 text-slate-200 placeholder:text-slate-500
+                     ring-1 ring-(--color-ring) focus:outline-none focus:ring-2 focus:ring-(--color-ok)
+                     p-4"></textarea>
+            <p class="mt-1 text-xs text-(--color-muted)">
+              Dica: envie arquivo <em>ou</em> cole o texto. Se enviar os dois, o arquivo tem prioridade.
+            </p>
+          </div>
+        </fieldset>
+
+        <div class="mt-5 flex flex-wrap items-center gap-3">
+          <button id="process-button" type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-(--color-ok) px-5 py-2.5
+                   font-bold text-(--color-ok-text) hover:opacity-90 active:scale-[.98] transition">
+            Processar
+          </button>
+
+          <span id="loading-indicator" class="hidden text-sm text-(--color-muted)">Processando…</span>
+          <span id="error-message" class="hidden text-sm text-red-400" role="alert"></span>
+        </div>
+      </form>
+
+      <section id="output-container" class="hidden border-t border-(--color-ring) p-5 md:p-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <div id="badge-category" class="text-sm"></div>
+          <div class="flex-1 min-w-[180px]">
+            <div class="h-2 rounded-full bg-slate-700/70 overflow-hidden">
+              <div id="trust-bar" class="h-full bg-(--color-ok) w-0 transition-[width] duration-500"></div>
+            </div>
+            <p class="mt-1 text-xs text-(--color-muted)">
+              Confiança: <span id="trust">0%</span>
+            </p>
+          </div>
+
+          <button id="copy-button" class="ml-auto inline-flex items-center justify-center rounded-lg bg-slate-700/70 px-3 py-1.5
+                   text-sm font-semibold hover:bg-slate-600/70 transition" type="button">
+            Copiar resposta
+          </button>
+        </div>
+
+        <div class="mt-4">
+          <h3 class="text-sm font-semibold text-slate-300">Resposta sugerida</h3>
+          <div id="suggested-reply"
+            class="mt-2 whitespace-pre-wrap rounded-xl bg-slate-900/70 p-4 ring-1 ring-(--color-ring)"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const formulary = document.getElementById('formulary');
+    const processButton = document.getElementById('process-button');
+    const copyButton = document.getElementById('copy-button');
+    const trust = document.getElementById('trust');
+    const trustBar = document.getElementById('trust-bar');
+    const suggestedReply = document.getElementById('suggested-reply');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const errorMessage = document.getElementById('error-message');
+    const outputSection = document.getElementById('output-container');
+    const categoryBadge = document.getElementById('badge-category');
+
+    function setLoading(shouldLoading) {
+      processButton.disabled = shouldLoading;
+      loadingIndicator.classList.toggle('hidden', !shouldLoading);
+      processButton.style.opacity = shouldLoading ? .6 : 1;
+      processButton.style.pointerEvents = shouldLoading ? 'none' : 'auto';
+    }
+
+    function showError(message) {
+      errorMessage.textContent = message || 'Ocorreu um erro.';
+      errorMessage.classList.remove('hidden');
+      setTimeout(() => errorMessage.classList.add('hidden'), 4000);
+    }
+
+    copyButton.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(suggestedReply.innerText || '');
+        copyButton.textContent = 'Copiado!';
+        setTimeout(() => (copyButton.textContent = 'Copiar resposta'), 1500);
+      } catch (_error) {}
+    });
+
+    formulary.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      setLoading(true);
+      outputSection.classList.add('hidden');
+
+      const formData = new FormData(formulary);
+      if (!formData.get('text')?.toString().trim()) formData.delete('text');
+      if (!formData.get('file') || (formData.get('file') instanceof File && !formData.get('file').name)) formData.delete('file');
+
+      if (!formData.has('text') && !formData.has('file')) {
+        setLoading(false);
+        return showError("Envie um arquivo .txt/.pdf ou cole o texto.");
+      }
+
+      try {
+        const response = await fetch('/classify/', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error?.detail || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const badgeHTML = data.category === 'Produtivo'
+          ? '<span class="inline-flex items-center rounded-full bg-(--color-ok) px-2.5 py-1 text-xs font-bold text-(--color-ok-text)">Produtivo</span>'
+          : '<span class="inline-flex items-center rounded-full bg-(--color-warning) px-2.5 py-1 text-xs font-bold text-(--color-warning-text)">Improdutivo</span>';
+        categoryBadge.innerHTML = `<b>Categoria:</b> ${badgeHTML}`;
+
+        const confidencePercent = Math.max(0, Math.min(1, Number(data.confidence || 0))) * 100;
+        trust.textContent = `${confidencePercent.toFixed(1)}%`;
+        trustBar.style.width = `${confidencePercent}%`;
+        trustBar.className = `h-full ${data.category === 'Produtivo' ? 'bg-(--color-ok)' : 'bg-(--color-warning)'} w-[${confidencePercent}%]`;
+
+        suggestedReply.textContent = data.suggested_reply || '';
+
+        outputSection.classList.remove('hidden');
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+
+</html>
