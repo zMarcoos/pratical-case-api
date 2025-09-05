@@ -1,7 +1,7 @@
-fastapi
-uvicorn
-unidecode
-pdfminer-six
-python-multipart
-python-dotenv
-requests
+fastapi>=0.116.1,<0.117.0
+uvicorn>=0.35.0,<0.36.0
+unidecode>=1.4.0,<2.0.0
+pdfminer-six>=20250506,<20250507
+python-multipart>=0.0.20,<0.0.21
+python-dotenv>=1.0.0,<2.0.0
+requests>=2.32.0,<3.0.0
