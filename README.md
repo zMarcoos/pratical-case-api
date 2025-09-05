@@ -78,9 +78,3 @@ Documentação automática: [http://localhost:8000/docs](http://localhost:8000/d
 * [FastAPI](https://fastapi.tiangolo.com/)
 * [Uvicorn](https://www.uvicorn.org/)
 * [Poetry](https://python-poetry.org/)
-
----
-
-## 📜 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
