@@ -1,20 +1,12 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from routes import classify
-from errors import handler
-from processing import classifier
+from src.routes import classify
+from src.errors import handler
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    classifier.load_model()
-    yield
 
 application = FastAPI(
     title="AutoU email classifier",
-    lifespan=lifespan
 )
 
 application.add_middleware(

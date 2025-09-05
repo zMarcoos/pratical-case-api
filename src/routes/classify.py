@@ -1,9 +1,9 @@
 from io import BytesIO
 from typing import Optional
 from fastapi import APIRouter, Form, HTTPException, UploadFile, status
-from models import classify
-from utils import file_util
-from processing import nlp, replies, classifier
+from src.models import classify
+from src.utils import file_util
+from src.processing import nlp, replies, classifier
 
 router = APIRouter()
 
