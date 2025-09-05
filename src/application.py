@@ -17,6 +17,10 @@ application.add_middleware(
     allow_headers=["*"]
 )
 
+@application.get("/")
+def root():
+  return "Hello World!"
+
 application.include_router(
     classify.router, prefix="/classify", tags=["classification"])
 
