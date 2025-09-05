@@ -19,7 +19,7 @@ API desenvolvida em **FastAPI** para classificação automática de e-mails, com
 ### 1. Clonar o projeto
 
 ```bash
-git clone https://github.com/seu-usuario/pratical-case-api.git
+git clone https://github.com/zMarcoos/pratical-case-api.git
 cd pratical-case-api
 ```
 
